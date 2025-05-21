@@ -1,6 +1,7 @@
 import typer
 from typing import Optional
 from rich.console import Console
+from rich.table import Table
 
 from dataset import create_dataset
 from real_dataset import create_real_dataset, format_currency_path, create_currency_results_table
@@ -8,6 +9,18 @@ from bellman_ford import bellman_ford, extract_cycle, format_cycle_path, create_
 from validation import run_algorithms, validate_results
 
 console = Console()
+
+def format_networkx_cycle(cycle, currencies, currency_codes=None):
+    """Format NetworkX cycle for display"""
+    if not cycle or len(cycle) < 2:
+        return "No cycle detected"
+    
+    if currency_codes:
+        # Use real currency codes
+        return " → ".join([currency_codes[c] if c < len(currency_codes) else f"Currency {c}" for c in cycle])
+    else:
+        # Use generic currency names
+        return " → ".join([f"Currency {c}" for c in cycle])
 
 def run_arbitrage_detection(
     num_currencies: int = 500,
@@ -94,7 +107,6 @@ def run_arbitrage_detection(
             end_amount = start_amount * profit
             profit_amount = end_amount - start_amount
             profit_style = "green" if profit_amount > 0 else "red"
-            console.print(f"\nExample: {start_amount} units → {end_amount:.2f} units  ", end="")
             console.print(f"(Profit: {profit_sign}{profit_amount:.2f})", style=profit_style)
     
     console.print("\n" + "-"*80, style="blue")
@@ -102,13 +114,30 @@ def run_arbitrage_detection(
     console.print("-"*80, style="blue")
     
     # Run algorithms
-    nx_has_cycle, our_cycle, our_has_cycle, our_has_arbitrage = run_algorithms(edges, num_currencies)
+    nx_has_cycle, nx_cycle, nx_cycle_weight, nx_profit_factor, our_cycle, our_has_cycle, our_has_arbitrage = run_algorithms(edges, num_currencies)
     
     # Validate results
     is_valid, cycles_agree = validate_results(nx_has_cycle, our_has_cycle, our_has_arbitrage)
     
     validation_style = "green" if is_valid else "red"
     console.print(f"✓ NetworkX validation: {'Passed' if is_valid else 'Failed'}", style=validation_style)
+    
+    # Show NetworkX cycle information with better formatting
+    if nx_has_cycle:
+        console.print("\n[bold]NetworkX Cycle Details:[/bold]")
+        if nx_cycle:
+            formatted_nx_cycle = format_networkx_cycle(nx_cycle, num_currencies, currency_codes if use_real_data else None)
+            console.print(f"  Cycle: {formatted_nx_cycle}")
+            
+            # Display NetworkX cycle weight and profit factor
+            profit_style = "bold green" if nx_profit_factor > 1 else "bold red"
+            profit_sign = "+" if nx_profit_factor > 1 else ""
+            console.print(f"  Cycle weight: {nx_cycle_weight:.6f}")
+            console.print(f"  Profit factor: {nx_profit_factor:.6f} ({profit_sign}{(nx_profit_factor-1)*100:.2f}%)", style=profit_style)
+        else:
+            console.print("  No specific cycle was extracted from NetworkX")
+    
+    console.print("\n[bold]Our Implementation Details:[/bold]")
     console.print(f"  • NetworkX detected negative cycle: {nx_has_cycle}")
     
     if our_cycle:
