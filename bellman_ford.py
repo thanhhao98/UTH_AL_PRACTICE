@@ -1,19 +1,27 @@
 import math
 from rich.table import Table
 
-def bellman_ford(edges, num_vertices):
+def bellman_ford(edges, num_vertices, max_iterations=None):
     """
     Bellman-Ford algorithm implementation to detect negative cycles
     
     Args:
         edges: List of tuples (u, v, weight) representing transactions
         num_vertices: Number of vertices in the graph
+        max_iterations: Maximum number of iterations to run (default: num_vertices)
         
     Returns:
         dist: Distance array from source
         pred: Predecessor array
         neg_cycle: Starting vertex of negative cycle or None if no cycle exists
     """
+    # Set default max iterations if not provided
+    if max_iterations is None:
+        max_iterations = num_vertices
+    
+    # Cap max_iterations to prevent excessive running time on large graphs
+    max_iterations = min(max_iterations, num_vertices, 1000)
+    
     INF = float('inf')
     dist = [INF]*(num_vertices+1)
     pred = [-1]*(num_vertices+1)
@@ -25,19 +33,51 @@ def bellman_ford(edges, num_vertices):
     all_edges = edges + source_edges
     
     # Relax edges (V times to check for negative cycle)
-    for _ in range(num_vertices):
+    consecutive_unchanged = 0  # Count iterations with no changes
+    for _ in range(max_iterations):
         updated = False
         for (u, v, w) in all_edges:
+            if u >= len(dist) or v >= len(dist):
+                continue  # Skip edges with invalid vertices
+                
+            if dist[u] == INF:
+                continue  # Skip relaxation if source distance is infinite
+                
             if dist[u] + w < dist[v]:
                 dist[v] = dist[u] + w
                 pred[v] = u
                 updated = True
+        
+        # Early termination if no updates occurred
         if not updated:
             break
+            
+        # Early termination if no changes for 3 consecutive iterations
+        # (shouldn't happen in theory, but safeguard against oscillating states)
+        if not updated:
+            consecutive_unchanged += 1
+            if consecutive_unchanged >= 3:
+                break
+        else:
+            consecutive_unchanged = 0
     
     # Check for negative cycle
     neg_cycle_start = None
-    for (u, v, w) in all_edges:
+    
+    # Add a safeguard to prevent checking too many edges for large graphs
+    edges_to_check = all_edges
+    if len(all_edges) > 10000:
+        # For very large graphs, sample a subset of edges to check
+        import random
+        edges_to_check = random.sample(all_edges, min(10000, len(all_edges)))
+    
+    for (u, v, w) in edges_to_check:
+        if u >= len(dist) or v >= len(dist):
+            continue  # Skip edges with invalid vertices
+            
+        if dist[u] == INF:
+            continue  # Skip check if source distance is infinite
+            
         if dist[u] + w < dist[v]:
             neg_cycle_start = v
             break
@@ -63,16 +103,26 @@ def extract_cycle(pred, neg_cycle_start, edges, num_vertices):
     # Find actual cycle by following predecessors
     v = neg_cycle_start
     for _ in range(num_vertices):
-        v = pred[v] or v
+        if pred[v] is not None and pred[v] != -1:  # Fixed: properly check for valid predecessor
+            v = pred[v]
+    
     cycle = []
     start = v
     while True:
         cycle.append(v)
+        if pred[v] is None or pred[v] == -1:  # Fixed: handle None or -1 properly
+            break
         v = pred[v]
-        if v == start or v is None:
+        if v == start:
             break
     cycle.append(start)
     cycle.reverse()
+    
+    # Validate cycle - ensure it's not just a single vertex cycle
+    if len(set(cycle)) <= 1:
+        # Invalid cycle with just one currency repeating
+        # Create empty cycle to indicate no valid arbitrage
+        return [], 1.0, 0.0, {}
     
     # Compute total weight and profit factor
     total_weight = 0.0

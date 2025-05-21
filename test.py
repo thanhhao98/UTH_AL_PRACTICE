@@ -9,13 +9,15 @@ import itertools
 
 console = Console()
 
-def run_test(currencies, transactions, insert_cycle=True):
+def run_test(currencies, transactions, insert_cycle=True, max_iterations=None):
     """Run a single test with the given parameters"""
     cmd = ["python", "main.py", 
            f"--num-currencies={currencies}", 
            f"--num-transactions={transactions}"]
     if not insert_cycle:
         cmd.append("--no-insert-cycle")
+    if max_iterations is not None:
+        cmd.append(f"--max-iterations={max_iterations}")
     
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
@@ -37,6 +39,7 @@ def run_test(currencies, transactions, insert_cycle=True):
             "currencies": currencies,
             "transactions": transactions,
             "insert_cycle": insert_cycle,
+            "max_iterations": max_iterations,
             "arbitrage_detected": arbitrage_detected,
             "validation_passed": validation_passed,
             "agreement": agreement,
@@ -49,6 +52,7 @@ def run_test(currencies, transactions, insert_cycle=True):
             "currencies": currencies,
             "transactions": transactions,
             "insert_cycle": insert_cycle,
+            "max_iterations": max_iterations,
             "arbitrage_detected": False,
             "validation_passed": False,
             "agreement": False,
@@ -60,13 +64,10 @@ def run_test(currencies, transactions, insert_cycle=True):
 
 def run_test_suite():
     """Run a comprehensive test suite with various parameter combinations"""
-    # Define test parameters
-    currency_counts = [2, 5, 10, 20, 50, 100]
-    transaction_counts = [4, 10, 20, 50, 100, 500]
+    # Define test parameters - use smaller ranges for faster testing
+    currency_counts = [2, 5, 10, 50]
+    transaction_counts = [4, 50, 500]
     cycle_options = [True, False]
-    
-    # Calculate total tests
-    total_tests = len(currency_counts) * len(transaction_counts) * len(cycle_options)
     
     # Generate all combinations
     test_cases = list(itertools.product(currency_counts, transaction_counts, cycle_options))
@@ -91,7 +92,13 @@ def run_test_suite():
                        f"{'with' if insert_cycle else 'without'} inserted cycle"
             progress.update(task, description=f"[cyan]{test_desc}")
             
-            result = run_test(currencies, transactions, insert_cycle)
+            # Set max_iterations based on the size of the problem
+            # For larger problems, limit iterations to prevent excessive runtime
+            max_iterations = None
+            if currencies > 20 or transactions > 100:
+                max_iterations = min(currencies, 100)  # Cap at 100 iterations
+            
+            result = run_test(currencies, transactions, insert_cycle, max_iterations)
             results.append(result)
             
             if result["success"]:

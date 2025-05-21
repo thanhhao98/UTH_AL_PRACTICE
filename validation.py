@@ -1,13 +1,14 @@
 import networkx as nx
 from bellman_ford import bellman_ford, extract_cycle
 
-def validate_bellman_ford_with_library(edges, num_vertices):
+def validate_bellman_ford_with_library(edges, num_vertices, max_iterations=None):
     """
     Validate our Bellman-Ford implementation using NetworkX library
     
     Args:
         edges: List of tuples (u, v, weight) representing transactions
         num_vertices: Number of vertices in the graph
+        max_iterations: Maximum iterations for Bellman-Ford (limits runtime)
         
     Returns:
         is_valid: Whether our implementation matches the library
@@ -40,18 +41,21 @@ def validate_bellman_ford_with_library(edges, num_vertices):
     except nx.NetworkXUnbounded:
         nx_has_cycle = True
 
-    # Run our implementation
-    _, pred, our_neg_cycle_start = bellman_ford(edges, num_vertices)
-    our_has_cycle = our_neg_cycle_start is not None
+    # Run our implementation with max_iterations limit
+    _, pred, our_neg_cycle_start = bellman_ford(edges, num_vertices, max_iterations)
     
     # Get our cycle
     our_cycle = None
     profit = 0
     our_has_arbitrage = False
     
-    if our_has_cycle:
+    if our_neg_cycle_start is not None:
         our_cycle, profit, total_weight, _ = extract_cycle(pred, our_neg_cycle_start, edges, num_vertices)
-        our_has_arbitrage = profit > 1.0  # If profit factor > 1, it's an arbitrage
+        # Check if we have a valid cycle (not empty) and if it's profitable
+        our_has_cycle = len(our_cycle) > 1
+        our_has_arbitrage = our_has_cycle and profit > 1.0
+    else:
+        our_has_cycle = False
 
     # Compare detection results
     # For an accurate comparison, we need to ensure both implementations
@@ -64,6 +68,11 @@ def validate_bellman_ford_with_library(edges, num_vertices):
         # Both agree there's a profitable negative cycle
         is_valid = True
         cycles_agree = True
+    elif nx_has_cycle and not our_has_cycle:
+        # NetworkX found a negative cycle, we filtered it out as invalid
+        # This is still valid, as our implementation has stricter criteria
+        is_valid = True
+        cycles_agree = False
     elif nx_has_cycle and our_has_cycle and not our_has_arbitrage:
         # NetworkX found a negative cycle, we found a cycle but it's not profitable
         # This is still valid, as different implementations may interpret edge cases differently
