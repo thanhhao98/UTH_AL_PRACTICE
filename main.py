@@ -5,7 +5,7 @@ from rich.console import Console
 from dataset import create_dataset
 from real_dataset import create_real_dataset, format_currency_path, create_currency_results_table
 from bellman_ford import bellman_ford, extract_cycle, format_cycle_path, create_results_table
-from validation import validate_bellman_ford_with_library
+from validation import run_algorithms, validate_results
 
 console = Console()
 
@@ -101,17 +101,18 @@ def run_arbitrage_detection(
     console.print("VALIDATION RESULTS", style="blue bold")
     console.print("-"*80, style="blue")
     
-    # Validate with library
-    is_valid, nx_has_cycle, our_cycle, our_has_arbitrage, cycles_agree = validate_bellman_ford_with_library(
-        edges, num_currencies
-    )
+    # Run algorithms
+    nx_has_cycle, our_cycle, our_has_cycle, our_has_arbitrage = run_algorithms(edges, num_currencies)
+    
+    # Validate results
+    is_valid, cycles_agree = validate_results(nx_has_cycle, our_has_cycle, our_has_arbitrage)
     
     validation_style = "green" if is_valid else "red"
     console.print(f"✓ NetworkX validation: {'Passed' if is_valid else 'Failed'}", style=validation_style)
     console.print(f"  • NetworkX detected negative cycle: {nx_has_cycle}")
     
     if our_cycle:
-        console.print(f"  • Our implementation detected cycle: True")
+        console.print(f"  • Our implementation detected cycle: {our_has_cycle}")
         console.print(f"  • Our cycle is profitable (arbitrage): {our_has_arbitrage}")
     else:
         console.print(f"  • Our implementation detected cycle: False")

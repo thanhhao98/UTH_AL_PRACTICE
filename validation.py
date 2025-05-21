@@ -1,20 +1,19 @@
 import networkx as nx
 from bellman_ford import bellman_ford, extract_cycle
 
-def validate_bellman_ford_with_library(edges, num_vertices):
+def run_algorithms(edges, num_vertices):
     """
-    Validate our Bellman-Ford implementation using NetworkX library
+    Run both NetworkX and our Bellman-Ford implementation
     
     Args:
         edges: List of tuples (u, v, weight) representing transactions
         num_vertices: Number of vertices in the graph
         
     Returns:
-        is_valid: Whether our implementation matches the library
         nx_has_cycle: Whether NetworkX detected a negative cycle
         our_cycle: Our detected cycle
+        our_has_cycle: Whether our implementation detected a valid cycle
         our_has_arbitrage: Whether our cycle is profitable
-        cycles_agree: Whether both implementations agree
     """
     # Create a NetworkX DiGraph
     G = nx.DiGraph()
@@ -49,12 +48,27 @@ def validate_bellman_ford_with_library(edges, num_vertices):
     our_has_arbitrage = False
     
     if our_neg_cycle_start is not None:
-        our_cycle, profit, total_weight, _ = extract_cycle(pred, our_neg_cycle_start, edges, num_vertices)
+        our_cycle, profit, _, _ = extract_cycle(pred, our_neg_cycle_start, edges, num_vertices)
         our_has_cycle = len(our_cycle) > 1
         our_has_arbitrage = our_has_cycle and profit > 1.0
     else:
         our_has_cycle = False
+    
+    return nx_has_cycle, our_cycle, our_has_cycle, our_has_arbitrage
 
+def validate_results(nx_has_cycle, our_has_cycle, our_has_arbitrage):
+    """
+    Validate results by comparing NetworkX and our implementation
+    
+    Args:
+        nx_has_cycle: Whether NetworkX detected a negative cycle
+        our_has_cycle: Whether our implementation detected a valid cycle
+        our_has_arbitrage: Whether our cycle is profitable
+        
+    Returns:
+        is_valid: Whether our implementation matches the library
+        cycles_agree: Whether both implementations agree
+    """
     # Compare results between implementations
     if not nx_has_cycle and not our_has_cycle:
         # Both agree there's no cycle
@@ -76,5 +90,28 @@ def validate_bellman_ford_with_library(edges, num_vertices):
         # Disagreement on cycle presence
         is_valid = False
         cycles_agree = False
+    
+    return is_valid, cycles_agree
+
+def validate_bellman_ford_with_library(edges, num_vertices):
+    """
+    Validate our Bellman-Ford implementation using NetworkX library
+    
+    Args:
+        edges: List of tuples (u, v, weight) representing transactions
+        num_vertices: Number of vertices in the graph
+        
+    Returns:
+        is_valid: Whether our implementation matches the library
+        nx_has_cycle: Whether NetworkX detected a negative cycle
+        our_cycle: Our detected cycle
+        our_has_arbitrage: Whether our cycle is profitable
+        cycles_agree: Whether both implementations agree
+    """
+    # Run both algorithms
+    nx_has_cycle, our_cycle, our_has_cycle, our_has_arbitrage = run_algorithms(edges, num_vertices)
+    
+    # Validate results
+    is_valid, cycles_agree = validate_results(nx_has_cycle, our_has_cycle, our_has_arbitrage)
     
     return is_valid, nx_has_cycle, our_cycle, our_has_arbitrage, cycles_agree 
