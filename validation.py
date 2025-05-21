@@ -1,14 +1,13 @@
 import networkx as nx
 from bellman_ford import bellman_ford, extract_cycle
 
-def validate_bellman_ford_with_library(edges, num_vertices, max_iterations=None):
+def validate_bellman_ford_with_library(edges, num_vertices):
     """
     Validate our Bellman-Ford implementation using NetworkX library
     
     Args:
         edges: List of tuples (u, v, weight) representing transactions
         num_vertices: Number of vertices in the graph
-        max_iterations: Maximum iterations for Bellman-Ford (limits runtime)
         
     Returns:
         is_valid: Whether our implementation matches the library
@@ -41,8 +40,8 @@ def validate_bellman_ford_with_library(edges, num_vertices, max_iterations=None)
     except nx.NetworkXUnbounded:
         nx_has_cycle = True
 
-    # Run our implementation with max_iterations limit
-    _, pred, our_neg_cycle_start = bellman_ford(edges, num_vertices, max_iterations)
+    # Run our implementation
+    _, pred, our_neg_cycle_start = bellman_ford(edges, num_vertices)
     
     # Get our cycle
     our_cycle = None

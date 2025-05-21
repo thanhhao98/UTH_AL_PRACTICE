@@ -33,7 +33,6 @@ python main.py
 - `--num-currencies`: Number of currency nodes (default: 500)
 - `--num-transactions`: Number of directed edges/transactions (default: 100000)
 - `--insert-cycle/--no-insert-cycle`: Whether to insert a known negative cycle (default: insert-cycle)
-- `--max-iterations`: Maximum number of Bellman-Ford iterations (default: num_currencies, capped at 1000)
 - `--use-real-data/--no-use-real-data`: Whether to use real exchange rate data (default: no-use-real-data)
 - `--use-historical/--no-use-historical`: With real data, whether to use historical rates (default: no-use-historical)
 
@@ -44,9 +43,6 @@ python main.py --num-currencies 100 --num-transactions 5000
 
 # Run without inserting a known negative cycle
 python main.py --no-insert-cycle
-
-# Run with a maximum of 50 iterations (for large datasets)
-python main.py --max-iterations 50
 
 # Run with real exchange rate data from the European Central Bank
 python main.py --use-real-data
@@ -81,7 +77,7 @@ When using real exchange rate data, the program:
 
 The implementation includes several safeguards to prevent infinite loops and ensure reasonable performance:
 
-1. **Maximum Iteration Limit**: The Bellman-Ford algorithm is capped at a maximum number of iterations (controlled by `--max-iterations`), preventing excessive runtime for large graphs.
+1. **Maximum Iteration Limit**: The Bellman-Ford algorithm is capped at a maximum number of iterations equal to the number of vertices (capped at 1000), preventing excessive runtime for large graphs.
 
 2. **Early Termination**: The algorithm stops early if no edge relaxations occur in an iteration, significantly speeding up execution for well-behaved graphs.
 

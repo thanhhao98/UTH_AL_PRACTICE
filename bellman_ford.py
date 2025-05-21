@@ -1,26 +1,21 @@
 import math
 from rich.table import Table
 
-def bellman_ford(edges, num_vertices, max_iterations=None):
+def bellman_ford(edges, num_vertices):
     """
     Bellman-Ford algorithm implementation to detect negative cycles
     
     Args:
         edges: List of tuples (u, v, weight) representing transactions
         num_vertices: Number of vertices in the graph
-        max_iterations: Maximum number of iterations to run (default: num_vertices)
         
     Returns:
         dist: Distance array from source
         pred: Predecessor array
         neg_cycle: Starting vertex of negative cycle or None if no cycle exists
     """
-    # Set default max iterations if not provided
-    if max_iterations is None:
-        max_iterations = num_vertices
-    
-    # Cap max_iterations to prevent excessive running time on large graphs
-    max_iterations = min(max_iterations, num_vertices, 1000)
+    # Set max iterations to num_vertices, capped at 1000 to prevent excessive running time
+    max_iterations = min(num_vertices, 1000)
     
     INF = float('inf')
     dist = [INF]*(num_vertices+1)

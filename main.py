@@ -13,7 +13,6 @@ def run_arbitrage_detection(
     num_currencies: int = 500,
     num_transactions: int = 100000,
     insert_cycle: bool = True,
-    max_iterations: int = None,
     use_real_data: bool = False,
     use_historical: bool = False,
 ):
@@ -24,7 +23,6 @@ def run_arbitrage_detection(
         num_currencies: Number of currency nodes
         num_transactions: Number of directed edges (transactions)
         insert_cycle: Whether to insert a known negative cycle
-        max_iterations: Maximum iterations for Bellman-Ford (limits runtime)
         use_real_data: Whether to use real exchange rate data
         use_historical: If using real data, whether to use historical rates
     """
@@ -47,8 +45,8 @@ def run_arbitrage_detection(
     
     console.print(f"Running Bellman-Ford algorithm to detect arbitrage opportunities...\n")
     
-    # Run Bellman-Ford with max_iterations limit
-    dist, pred, neg_cycle_start = bellman_ford(edges, num_currencies, max_iterations)
+    # Run Bellman-Ford without max_iterations limit
+    dist, pred, neg_cycle_start = bellman_ford(edges, num_currencies)
     
     # Process results
     if neg_cycle_start is None:
@@ -105,7 +103,7 @@ def run_arbitrage_detection(
     
     # Validate with library
     is_valid, nx_has_cycle, our_cycle, our_has_arbitrage, cycles_agree = validate_bellman_ford_with_library(
-        edges, num_currencies, max_iterations
+        edges, num_currencies
     )
     
     validation_style = "green" if is_valid else "red"
