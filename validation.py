@@ -23,9 +23,9 @@ def validate_bellman_ford_with_library(edges, num_vertices):
     G.add_nodes_from(range(num_vertices))
     
     # Add edges (excluding the dummy source edges)
-    edge_data = {}  # To keep track of edges for later
+    edge_data = {}
     for u, v, weight in edges:
-        if u < num_vertices and v < num_vertices:  # Skip dummy source edges
+        if u < num_vertices and v < num_vertices:
             G.add_edge(u, v, weight=weight)
             edge_data[(u, v)] = weight
     
@@ -50,15 +50,12 @@ def validate_bellman_ford_with_library(edges, num_vertices):
     
     if our_neg_cycle_start is not None:
         our_cycle, profit, total_weight, _ = extract_cycle(pred, our_neg_cycle_start, edges, num_vertices)
-        # Check if we have a valid cycle (not empty) and if it's profitable
         our_has_cycle = len(our_cycle) > 1
         our_has_arbitrage = our_has_cycle and profit > 1.0
     else:
         our_has_cycle = False
 
-    # Compare detection results
-    # For an accurate comparison, we need to ensure both implementations
-    # find the same condition: either both find no cycles or both find a cycle with arbitrage
+    # Compare results between implementations
     if not nx_has_cycle and not our_has_cycle:
         # Both agree there's no cycle
         is_valid = True
@@ -68,17 +65,15 @@ def validate_bellman_ford_with_library(edges, num_vertices):
         is_valid = True
         cycles_agree = True
     elif nx_has_cycle and not our_has_cycle:
-        # NetworkX found a negative cycle, we filtered it out as invalid
-        # This is still valid, as our implementation has stricter criteria
+        # NetworkX found a cycle, but we filtered it as invalid
         is_valid = True
         cycles_agree = False
     elif nx_has_cycle and our_has_cycle and not our_has_arbitrage:
-        # NetworkX found a negative cycle, we found a cycle but it's not profitable
-        # This is still valid, as different implementations may interpret edge cases differently
+        # NetworkX found a cycle, we found a cycle but not profitable
         is_valid = True
         cycles_agree = False
     else:
-        # Disagreement on the presence of negative cycles
+        # Disagreement on cycle presence
         is_valid = False
         cycles_agree = False
     

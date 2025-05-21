@@ -25,14 +25,11 @@ def fetch_ecb_daily_rates():
         namespaces = {'gesmes': 'http://www.gesmes.org/xml/2002-08-01', 
                      'eurofxref': 'http://www.ecb.int/vocabulary/2002-08-01/eurofxref'}
         
-        # Parse XML data into a dataframe
         df = pd.read_xml(response.content, xpath='.//eurofxref:Cube[@time]', namespaces=namespaces)
         
-        # Get the date of the rates
         date_str = df.iloc[0]['time'] if not df.empty else "latest"
         console.print(f"Using exchange rates from {date_str}", style="green")
         
-        # Extract rates and currency codes
         rates_df = pd.read_xml(response.content, xpath='.//eurofxref:Cube[@currency]', namespaces=namespaces)
         return rates_df
     except Exception as e:
@@ -50,10 +47,8 @@ def fetch_ecb_historical_rates(days=90):
         namespaces = {'gesmes': 'http://www.gesmes.org/xml/2002-08-01', 
                      'eurofxref': 'http://www.ecb.int/vocabulary/2002-08-01/eurofxref'}
         
-        # Parse XML data into a dataframe
         rates_df = pd.read_xml(response.content, xpath='.//eurofxref:Cube[@currency]', namespaces=namespaces)
         
-        # Get unique dates
         dates = pd.read_xml(response.content, xpath='.//eurofxref:Cube[@time]', namespaces=namespaces)
         console.print(f"Retrieved exchange rates for {len(dates)} dates", style="green")
         
@@ -88,7 +83,6 @@ def create_real_dataset(use_historical=False, base_currency="EUR", num_currencie
     # Use cached data if available and recent
     if cache_exists:
         rates_df = pd.read_csv(cache_file)
-        # Check if data is from today
         if 'date' in rates_df.columns and today in rates_df['date'].values:
             console.print("Using cached exchange rate data", style="green")
         else:
@@ -102,7 +96,6 @@ def create_real_dataset(use_historical=False, base_currency="EUR", num_currencie
             rates_df = fetch_ecb_daily_rates()
         
         if rates_df is not None:
-            # Cache the data
             rates_df.to_csv(cache_file, index=False)
     
     if rates_df is None or len(rates_df) == 0:
@@ -127,10 +120,9 @@ def create_real_dataset(use_historical=False, base_currency="EUR", num_currencie
     # Create a mapping from currency code to index
     currency_to_index = {code: i for i, code in enumerate(currency_codes)}
     
-    # Create edges for the graph
     edges = []
     
-    # In case of historical data, group by date
+    # Group by date for historical data
     if 'time' in rates_df.columns:
         dates = rates_df['time'].unique()
         daily_groups = rates_df.groupby('time')
@@ -147,7 +139,7 @@ def create_real_dataset(use_historical=False, base_currency="EUR", num_currencie
         # Only include currencies in our list
         day_rates = day_rates[day_rates['currency'].isin(currency_codes)]
         
-        # Create edges for direct conversions
+        # Create edges for all currency pairs
         for i, row1 in day_rates.iterrows():
             curr1 = row1['currency']
             if curr1 not in currency_to_index:
@@ -161,10 +153,8 @@ def create_real_dataset(use_historical=False, base_currency="EUR", num_currencie
                 if curr2 not in currency_to_index:
                     continue
                 
-                # Calculate the exchange rate from curr1 to curr2
+                # Calculate exchange rate and convert to graph weight
                 rate = row2['rate'] / row1['rate']
-                
-                # Convert to our graph format (source index, target index, -log(rate))
                 weight = -math.log(rate)
                 edges.append((currency_to_index[curr1], currency_to_index[curr2], weight))
     

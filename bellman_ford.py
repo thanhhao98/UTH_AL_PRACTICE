@@ -28,7 +28,7 @@ def bellman_ford(edges, num_vertices):
     all_edges = edges + source_edges
     
     # Relax edges (V times to check for negative cycle)
-    consecutive_unchanged = 0  # Count iterations with no changes
+    consecutive_unchanged = 0
     for _ in range(max_iterations):
         updated = False
         for (u, v, w) in all_edges:
@@ -43,12 +43,10 @@ def bellman_ford(edges, num_vertices):
                 pred[v] = u
                 updated = True
         
-        # Early termination if no updates occurred
         if not updated:
-            break
+            break  # Early termination if no updates
             
-        # Early termination if no changes for 3 consecutive iterations
-        # (shouldn't happen in theory, but safeguard against oscillating states)
+        # Early termination safeguard against oscillating states
         if not updated:
             consecutive_unchanged += 1
             if consecutive_unchanged >= 3:
@@ -59,19 +57,18 @@ def bellman_ford(edges, num_vertices):
     # Check for negative cycle
     neg_cycle_start = None
     
-    # Add a safeguard to prevent checking too many edges for large graphs
+    # For very large graphs, sample a subset of edges to maintain performance
     edges_to_check = all_edges
     if len(all_edges) > 10000:
-        # For very large graphs, sample a subset of edges to check
         import random
         edges_to_check = random.sample(all_edges, min(10000, len(all_edges)))
     
     for (u, v, w) in edges_to_check:
         if u >= len(dist) or v >= len(dist):
-            continue  # Skip edges with invalid vertices
+            continue
             
         if dist[u] == INF:
-            continue  # Skip check if source distance is infinite
+            continue
             
         if dist[u] + w < dist[v]:
             neg_cycle_start = v
@@ -98,14 +95,14 @@ def extract_cycle(pred, neg_cycle_start, edges, num_vertices):
     # Find actual cycle by following predecessors
     v = neg_cycle_start
     for _ in range(num_vertices):
-        if pred[v] is not None and pred[v] != -1:  # Fixed: properly check for valid predecessor
+        if pred[v] is not None and pred[v] != -1:  # Properly check for valid predecessor
             v = pred[v]
     
     cycle = []
     start = v
     while True:
         cycle.append(v)
-        if pred[v] is None or pred[v] == -1:  # Fixed: handle None or -1 properly
+        if pred[v] is None or pred[v] == -1:
             break
         v = pred[v]
         if v == start:
@@ -113,10 +110,8 @@ def extract_cycle(pred, neg_cycle_start, edges, num_vertices):
     cycle.append(start)
     cycle.reverse()
     
-    # Validate cycle - ensure it's not just a single vertex cycle
+    # Filter out invalid single-vertex cycles
     if len(set(cycle)) <= 1:
-        # Invalid cycle with just one currency repeating
-        # Create empty cycle to indicate no valid arbitrage
         return [], 1.0, 0.0, {}
     
     # Compute total weight and profit factor

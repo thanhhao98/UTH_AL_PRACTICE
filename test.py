@@ -26,7 +26,7 @@ def run_test(currencies, transactions, insert_cycle=True):
         validation_passed = "NetworkX validation: Passed" in output
         agreement = "The cycle validation is successful! Both implementations agree." in output
         
-        # Try to extract profit factor if arbitrage was detected
+        # Extract profit factor if arbitrage was detected
         profit_factor = None
         if arbitrage_detected:
             profit_match = re.search(r"Profit factor:\s+(\d+\.\d+)", output)

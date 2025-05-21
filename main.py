@@ -45,7 +45,7 @@ def run_arbitrage_detection(
     
     console.print(f"Running Bellman-Ford algorithm to detect arbitrage opportunities...\n")
     
-    # Run Bellman-Ford without max_iterations limit
+    # Run Bellman-Ford
     dist, pred, neg_cycle_start = bellman_ford(edges, num_currencies)
     
     # Process results
@@ -89,7 +89,7 @@ def run_arbitrage_detection(
             profit_sign = "+" if profit > 1 else ""
             console.print(f"Profit factor:       {profit:.6f} [{profit_style}]({profit_sign}{(profit-1)*100:.2f}% profit per full cycle)[/{profit_style}]")
             
-            # Calculate how much profit from example starting amount
+            # Calculate profit from example starting amount
             start_amount = 1000
             end_amount = start_amount * profit
             profit_amount = end_amount - start_amount
