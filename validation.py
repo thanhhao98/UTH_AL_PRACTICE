@@ -2,13 +2,14 @@ import networkx as nx
 from bellman_ford import bellman_ford, extract_cycle
 import math
 
+
 def extract_nx_cycle(G):
     """
     Extract a negative cycle from a NetworkX graph
-    
+
     Args:
         G: NetworkX DiGraph
-        
+
     Returns:
         cycle: List of nodes in the negative cycle, or None if no cycle exists
         cycle_weight: Total weight of the cycle
@@ -16,10 +17,12 @@ def extract_nx_cycle(G):
     try:
         # Find a negative cycle using NetworkX's dedicated function
         cycle = nx.find_negative_cycle(G, 0)
-        
+
         # Calculate cycle weight
         if cycle:
-            cycle_weight = sum(G[cycle[i]][cycle[i+1]]['weight'] for i in range(len(cycle)-1))
+            cycle_weight = sum(
+                G[cycle[i]][cycle[i + 1]]["weight"] for i in range(len(cycle) - 1)
+            )
             return cycle, cycle_weight
         return None, 0
     except:
@@ -37,10 +40,12 @@ def extract_nx_cycle(G):
                             pred[u] = None
                         if v not in pred:
                             pred[v] = None
-                    
+
                     for u, v in G.edges():
                         # If relaxation is still possible, we have a negative cycle
-                        if G[u][v]['weight'] + dist.get(u, float('inf')) < dist.get(v, float('inf')):
+                        if G[u][v]["weight"] + dist.get(u, float("inf")) < dist.get(
+                            v, float("inf")
+                        ):
                             # Find the cycle manually
                             cycle = [v]
                             current = u
@@ -54,31 +59,32 @@ def extract_nx_cycle(G):
                                     for neighbor in G.predecessors(current):
                                         current = neighbor
                                         break
-                            
+
                             # Slice to get just the cycle
                             start_idx = cycle.index(current)
                             cycle = cycle[start_idx:]
                             cycle.append(cycle[0])  # Close the cycle
-                            
+
                             # Calculate cycle weight
                             cycle_weight = 0
-                            for i in range(len(cycle)-1):
-                                cycle_weight += G[cycle[i]][cycle[i+1]]['weight']
-                            
+                            for i in range(len(cycle) - 1):
+                                cycle_weight += G[cycle[i]][cycle[i + 1]]["weight"]
+
                             return cycle, cycle_weight
         except:
             pass
-    
+
     return None, 0
+
 
 def run_algorithms(edges, num_vertices):
     """
     Run both NetworkX and our Bellman-Ford implementation
-    
+
     Args:
         edges: List of tuples (u, v, weight) representing transactions
         num_vertices: Number of vertices in the graph
-        
+
     Returns:
         nx_has_cycle: Whether NetworkX detected a negative cycle
         nx_cycle: The negative cycle detected by NetworkX (if any)
@@ -90,23 +96,23 @@ def run_algorithms(edges, num_vertices):
     """
     # Create a NetworkX DiGraph
     G = nx.DiGraph()
-    
+
     # Add nodes
     G.add_nodes_from(range(num_vertices))
-    
+
     # Add edges (excluding the dummy source edges)
     edge_data = {}
     for u, v, weight in edges:
         if u < num_vertices and v < num_vertices:
             G.add_edge(u, v, weight=weight)
             edge_data[(u, v)] = weight
-    
+
     # Check if there's a negative cycle using NetworkX
     nx_has_cycle = False
     nx_cycle = None
     nx_cycle_weight = 0
     nx_profit_factor = 1.0
-    
+
     try:
         # Use bellman_ford_predecessor_and_distance which checks for negative cycles
         for source in range(min(5, num_vertices)):  # Check from a few sources
@@ -121,30 +127,41 @@ def run_algorithms(edges, num_vertices):
 
     # Run our implementation
     _, pred, our_neg_cycle_start = bellman_ford(edges, num_vertices)
-    
+
     # Get our cycle
     our_cycle = None
     profit = 0
     our_has_arbitrage = False
-    
+
     if our_neg_cycle_start is not None:
-        our_cycle, profit, _, _ = extract_cycle(pred, our_neg_cycle_start, edges, num_vertices)
+        our_cycle, profit, _, _ = extract_cycle(
+            pred, our_neg_cycle_start, edges, num_vertices
+        )
         our_has_cycle = len(our_cycle) > 1
         our_has_arbitrage = our_has_cycle and profit > 1.0
     else:
         our_has_cycle = False
-    
-    return nx_has_cycle, nx_cycle, nx_cycle_weight, nx_profit_factor, our_cycle, our_has_cycle, our_has_arbitrage
+
+    return (
+        nx_has_cycle,
+        nx_cycle,
+        nx_cycle_weight,
+        nx_profit_factor,
+        our_cycle,
+        our_has_cycle,
+        our_has_arbitrage,
+    )
+
 
 def validate_results(nx_has_cycle, our_has_cycle, our_has_arbitrage):
     """
     Validate results by comparing NetworkX and our implementation
-    
+
     Args:
         nx_has_cycle: Whether NetworkX detected a negative cycle
         our_has_cycle: Whether our implementation detected a valid cycle
         our_has_arbitrage: Whether our cycle is profitable
-        
+
     Returns:
         is_valid: Whether our implementation matches the library
         cycles_agree: Whether both implementations agree
@@ -170,17 +187,18 @@ def validate_results(nx_has_cycle, our_has_cycle, our_has_arbitrage):
         # Disagreement on cycle presence
         is_valid = False
         cycles_agree = False
-    
+
     return is_valid, cycles_agree
+
 
 def validate_bellman_ford_with_library(edges, num_vertices):
     """
     Validate our Bellman-Ford implementation using NetworkX library
-    
+
     Args:
         edges: List of tuples (u, v, weight) representing transactions
         num_vertices: Number of vertices in the graph
-        
+
     Returns:
         is_valid: Whether our implementation matches the library
         nx_has_cycle: Whether NetworkX detected a negative cycle
@@ -192,9 +210,28 @@ def validate_bellman_ford_with_library(edges, num_vertices):
         cycles_agree: Whether both implementations agree
     """
     # Run both algorithms
-    nx_has_cycle, nx_cycle, nx_cycle_weight, nx_profit_factor, our_cycle, our_has_cycle, our_has_arbitrage = run_algorithms(edges, num_vertices)
-    
+    (
+        nx_has_cycle,
+        nx_cycle,
+        nx_cycle_weight,
+        nx_profit_factor,
+        our_cycle,
+        our_has_cycle,
+        our_has_arbitrage,
+    ) = run_algorithms(edges, num_vertices)
+
     # Validate results
-    is_valid, cycles_agree = validate_results(nx_has_cycle, our_has_cycle, our_has_arbitrage)
-    
-    return is_valid, nx_has_cycle, nx_cycle, nx_cycle_weight, nx_profit_factor, our_cycle, our_has_arbitrage, cycles_agree 
+    is_valid, cycles_agree = validate_results(
+        nx_has_cycle, our_has_cycle, our_has_arbitrage
+    )
+
+    return (
+        is_valid,
+        nx_has_cycle,
+        nx_cycle,
+        nx_cycle_weight,
+        nx_profit_factor,
+        our_cycle,
+        our_has_arbitrage,
+        cycles_agree,
+    )
