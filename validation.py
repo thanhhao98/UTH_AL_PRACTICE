@@ -1,6 +1,7 @@
 import networkx as nx
 from bellman_ford import bellman_ford, extract_cycle
 import math
+import time
 
 
 def extract_nx_cycle(G):
@@ -79,7 +80,7 @@ def extract_nx_cycle(G):
 
 def run_algorithms(edges, num_vertices):
     """
-    Run both NetworkX and our Bellman-Ford implementation
+    Run both NetworkX and our Bellman-Ford implementation with timing
 
     Args:
         edges: List of tuples (u, v, weight) representing transactions
@@ -90,9 +91,11 @@ def run_algorithms(edges, num_vertices):
         nx_cycle: The negative cycle detected by NetworkX (if any)
         nx_cycle_weight: Weight of the NetworkX cycle
         nx_profit_factor: Profit factor of the NetworkX cycle
+        nx_time: Time taken by NetworkX implementation (seconds)
         our_cycle: Our detected cycle
         our_has_cycle: Whether our implementation detected a valid cycle
         our_has_arbitrage: Whether our cycle is profitable
+        our_time: Time taken by our implementation (seconds)
     """
     # Create a NetworkX DiGraph
     G = nx.DiGraph()
@@ -107,6 +110,9 @@ def run_algorithms(edges, num_vertices):
             G.add_edge(u, v, weight=weight)
             edge_data[(u, v)] = weight
 
+    # Time NetworkX implementation
+    nx_start_time = time.time()
+    
     # Check if there's a negative cycle using NetworkX
     nx_has_cycle = False
     nx_cycle = None
@@ -124,7 +130,13 @@ def run_algorithms(edges, num_vertices):
         nx_cycle, nx_cycle_weight = extract_nx_cycle(G)
         if nx_cycle and nx_cycle_weight < 0:
             nx_profit_factor = math.exp(-nx_cycle_weight)
+    
+    nx_end_time = time.time()
+    nx_time = nx_end_time - nx_start_time
 
+    # Time our implementation
+    our_start_time = time.time()
+    
     # Run our implementation
     _, pred, our_neg_cycle_start = bellman_ford(edges, num_vertices)
 
@@ -141,15 +153,20 @@ def run_algorithms(edges, num_vertices):
         our_has_arbitrage = our_has_cycle and profit > 1.0
     else:
         our_has_cycle = False
+    
+    our_end_time = time.time()
+    our_time = our_end_time - our_start_time
 
     return (
         nx_has_cycle,
         nx_cycle,
         nx_cycle_weight,
         nx_profit_factor,
+        nx_time,
         our_cycle,
         our_has_cycle,
         our_has_arbitrage,
+        our_time,
     )
 
 
@@ -215,9 +232,11 @@ def validate_bellman_ford_with_library(edges, num_vertices):
         nx_cycle,
         nx_cycle_weight,
         nx_profit_factor,
+        nx_time,
         our_cycle,
         our_has_cycle,
         our_has_arbitrage,
+        our_time,
     ) = run_algorithms(edges, num_vertices)
 
     # Validate results
@@ -231,7 +250,9 @@ def validate_bellman_ford_with_library(edges, num_vertices):
         nx_cycle,
         nx_cycle_weight,
         nx_profit_factor,
+        nx_time,
         our_cycle,
         our_has_arbitrage,
         cycles_agree,
+        our_time,
     )

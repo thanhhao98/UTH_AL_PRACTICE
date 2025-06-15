@@ -162,9 +162,11 @@ def run_arbitrage_detection(
         nx_cycle,
         nx_cycle_weight,
         nx_profit_factor,
+        nx_time,
         our_cycle,
         our_has_cycle,
         our_has_arbitrage,
+        our_time,
     ) = run_algorithms(edges, num_currencies)
 
     # Validate results
@@ -177,6 +179,41 @@ def run_arbitrage_detection(
         f"✓ NetworkX validation: {'Passed' if is_valid else 'Failed'}",
         style=validation_style,
     )
+
+    # Display performance comparison
+    console.print("\n[bold]PERFORMANCE COMPARISON:[/bold]")
+    console.print("-" * 40)
+    
+    # Format timing with appropriate precision
+    if nx_time < 0.001:
+        nx_time_str = f"{nx_time*1000000:.2f} μs"
+    elif nx_time < 1:
+        nx_time_str = f"{nx_time*1000:.2f} ms"
+    else:
+        nx_time_str = f"{nx_time:.4f} s"
+        
+    if our_time < 0.001:
+        our_time_str = f"{our_time*1000000:.2f} μs"
+    elif our_time < 1:
+        our_time_str = f"{our_time*1000:.2f} ms"
+    else:
+        our_time_str = f"{our_time:.4f} s"
+    
+    console.print(f"  NetworkX Bellman-Ford: {nx_time_str}")
+    console.print(f"  Our Implementation:     {our_time_str}")
+    
+    # Calculate speedup/slowdown
+    if our_time > 0:
+        speedup = nx_time / our_time
+        if speedup > 1:
+            console.print(f"  Speedup: Our implementation is {speedup:.2f}x faster", style="bold green")
+        elif speedup < 1:
+            slowdown = our_time / nx_time
+            console.print(f"  Slowdown: Our implementation is {slowdown:.2f}x slower", style="bold yellow")
+        else:
+            console.print("  Performance: Both implementations are equally fast", style="bold blue")
+    else:
+        console.print("  Performance: Unable to calculate (our implementation took 0 time)", style="dim")
 
     # Show NetworkX cycle information with better formatting
     if nx_has_cycle:
